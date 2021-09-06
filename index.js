@@ -1,6 +1,3 @@
-// var cheerio = require("cheerio"),
-//   fs = require("fs");
-// import fs from 'fs';
 import path from 'path';
 import {readdir, readFile, writeFile } from 'fs/promises';
 import cheerio from 'cheerio';
@@ -11,14 +8,6 @@ try {
   console.error(err);
 }
 
-// // 读取书签 html 文件
-// fs.readFile("favorites.html", "utf-8", function (err, data) {
-//   if (err) {
-//     console.log("error", err);
-//   } else {
-//     parse(data);
-//   }
-// });
 async function mergeBookmarks() {
   const files = await readdir ('./bookmarks')
   const result = []
@@ -26,15 +15,15 @@ async function mergeBookmarks() {
     const promise = readFile(path.join('bookmarks', file), 'utf-8')
     result.push(promise)
   }
-  console.log(result);
   Promise.all(result).then(values => {
     const result = []
     for (const html of values) {
       const obj = parse(html)
-      result.push(obj)
+      result.push(...obj.children)
     }
+    const flatResult = flat(result)
     // 将对象转化为json字符串，添加额外参数使json格式更易阅读
-    var s = JSON.stringify(result, null, 4);
+    var s = JSON.stringify(flatResult, null, 4);
     // 将json字符串写入json文件
     writeFile("bookmarks.json", s);
   })
@@ -49,16 +38,10 @@ function parse(html) {
   var $dt = $dl.children("dt").eq(0);
 
   // 从dt开始遍历dom树，生成对象
-  var obj = foo($dt);
-
-  // // 将对象转化为json字符串，添加额外参数使json格式更易阅读
-  // var s = JSON.stringify(obj, null, 4);
-  // // 将json字符串写入json文件
-  // fs.writeFileSync("bookmarks.json", s);
-  return obj
+  return foo($dt);
 }
 
-function foo($dt) {
+function foo($dt, parentName) {
   // h3标签为文件夹名称
   var $h3 = $dt.children("h3");
 
@@ -69,7 +52,8 @@ function foo($dt) {
     return $a.length > 0 ? { type: 2, name: $a.text(), href: $a.attr("href"), icon: $a.attr("icon") } : null;
   }
 
-  var h3 = $h3.text();
+  var title = $h3.text();
+  var h3 = parentName ? `${parentName} - ${title}` : title;
   var arr = [];
   var obj = {};
 
@@ -79,7 +63,7 @@ function foo($dt) {
 
   for (var i = 0; i < $dtArr.length; i++) {
     // 遍历下一级dt标签
-    var tmp = foo($dtArr.eq(i));
+    var tmp = foo($dtArr.eq(i), h3);
     // 将返回的对象push至子文件数组
     arr.push(tmp);
   }
@@ -90,4 +74,22 @@ function foo($dt) {
   obj.children = arr;
   // 返回该对象
   return obj;
+}
+
+function flat(arr, resultArr) {
+  const result = resultArr || []
+  for (const item of arr) {
+    if (item.type === 1) {
+      const obj = {...item}
+      const children = item.children.filter(item => {
+        return item.type === 2
+      })
+      if (children.length > 0) {
+        obj.children = children
+        result.push(obj)
+      }
+      flat(item.children, result)
+    }
+  }
+  return result
 }
