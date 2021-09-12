@@ -21,9 +21,9 @@ async function mergeBookmarks() {
       const obj = parse(html)
       result.push(...obj.children)
     }
-    const flatResult = flat(result)
+    // const flatResult = flat(result)
     // 将对象转化为json字符串，添加额外参数使json格式更易阅读
-    var s = JSON.stringify(flatResult, null, 4);
+    var s = JSON.stringify(result, null, 4);
     // 将json字符串写入json文件
     writeFile("bookmarks.json", s);
   })
@@ -41,7 +41,7 @@ function parse(html) {
   return foo($dt);
 }
 
-function foo($dt, parentName) {
+function foo($dt) {
   // h3标签为文件夹名称
   var $h3 = $dt.children("h3");
 
@@ -53,7 +53,7 @@ function foo($dt, parentName) {
   }
 
   var title = $h3.text();
-  var h3 = parentName ? `${parentName} - ${title}` : title;
+  var h3 = title;
   var arr = [];
   var obj = {};
 
@@ -63,7 +63,7 @@ function foo($dt, parentName) {
 
   for (var i = 0; i < $dtArr.length; i++) {
     // 遍历下一级dt标签
-    var tmp = foo($dtArr.eq(i), h3);
+    var tmp = foo($dtArr.eq(i));
     // 将返回的对象push至子文件数组
     arr.push(tmp);
   }
