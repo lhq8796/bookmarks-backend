@@ -41,7 +41,7 @@ function parse(html) {
   return foo($dt);
 }
 
-function foo($dt, parentName) {
+function foo($dt) {
   // h3标签为文件夹名称
   var $h3 = $dt.children("h3");
 
@@ -49,11 +49,10 @@ function foo($dt, parentName) {
     // a标签为网址
     var $a = $dt.children("a");
     // 返回该书签的名称和网址组成的对象
-    return $a.length > 0 ? { type: 2, name: $a.text(), href: $a.attr("href"), icon: $a.attr("icon") } : null;
+    return $a.length > 0 ? { name: $a.text(), href: $a.attr("href"), icon: $a.attr("icon") } : null;
   }
 
-  var title = $h3.text();
-  var h3 = parentName ? `${parentName} - ${title}` : title;
+  var h3 = $h3.text();
   var arr = [];
   var obj = {};
 
@@ -69,7 +68,6 @@ function foo($dt, parentName) {
   }
 
   // 创建文件夹与子文件数组的键值对
-  obj.type = 1;
   obj.name = h3;
   obj.children = arr;
   // 返回该对象
@@ -79,10 +77,10 @@ function foo($dt, parentName) {
 function flat(arr, resultArr) {
   const result = resultArr || []
   for (const item of arr) {
-    if (item.type === 1) {
+    if (item.children) {
       const obj = {...item}
       const children = item.children.filter(item => {
-        return item.type === 2
+        return !item.children
       })
       if (children.length > 0) {
         obj.children = children
